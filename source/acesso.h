@@ -2,6 +2,8 @@
 
 #include "auxiliares.h"
 
+/* STRUCT RESPONSAVEL POR ARMAZENAR OS DADOS DA IMAGEM */
+
 typedef struct info_imagem
 {
     char *tipo_imagem;
@@ -11,6 +13,8 @@ typedef struct info_imagem
     int max_imagem;
 } info_imagem;
 
+/* STRUCT RESPONSAVEL POR ARMAZENAR OS PONTEIROS DOS ARQUIVOS DE ENTRADA E SAIDA  */
+
 typedef struct
 {
     FILE *arquivo_entrada;
@@ -18,6 +22,8 @@ typedef struct
     info_imagem *infoImagem;
 
 } ponteiros_arquivos;
+
+/* FUNCOES DA BIBLIOTECA */
 
 void leitura_info(ponteiros_arquivos *input);
 void escreve_info(ponteiros_arquivos *input);

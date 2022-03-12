@@ -6,39 +6,56 @@
 
 int main(int argc, char const *argv[])
 {
+    /* ALOCA UM PONTEIRO PARA A STRUCT QUE CUIDA DA LINHA DE COMANDO */
     linha_comando *linhaComando = malloc(sizeof(linha_comando));
+    
+    /* LE A LINHA DE COMANDO */
     ler_linha_comando(argc, argv, linhaComando);
+
+    /* ALOCA UM PONTEIRO PARA A STRUCT QUE CUIDA DA IMAGEM */
     ponteiros_arquivos *input = malloc(sizeof(ponteiros_arquivos));
 
+    /* VERIFICA SE A LEITURA É FEITA PELO STDIN OU ARQUIVO */
     if (!linhaComando->leitura_stdin)
         input->arquivo_entrada = abre_arquivo(linhaComando->entrada, true);
     else
         input->arquivo_entrada = stdin;
+
+    /* ALOCA 0 PONTEIRO PARA A STRUCT QUE CUIDA DA DAS INFORMACOES DA IMAGEM */
     input->infoImagem = malloc(sizeof(info_imagem));
+
+    /* LE A IMAGEM */
     le_imagem(input);
 
+    /* PONTEIRO AUXILIAR */
     info_imagem *infoImagem = input->infoImagem;
 
+    /* VERIFICA SE É VALOR PADRAO */
     if (linhaComando->rotacao)
         linhaComando->valor_rotacao = 90;
 
-    printf(" :>> %d\n", infoImagem->linhas);
-    printf(" :>> %d\n", infoImagem->colunas);
+    /* VERIFICA SE É ROTACAO SIMPLES OU LIVRE*/
+    if (linhaComando->valor_rotacao == 90)
+        infoImagem->imagem = filtro_rotacao_simples(infoImagem->imagem, &infoImagem->linhas, &infoImagem->colunas);
 
-    infoImagem->imagem = filtro_rotacao(infoImagem->imagem, &infoImagem->linhas, &infoImagem->colunas, linhaComando->valor_rotacao);
+    else
+        infoImagem->imagem = filtro_rotacao_livre(infoImagem->imagem, &infoImagem->linhas, &infoImagem->colunas, linhaComando->valor_rotacao);
 
-    printf(" :>> %d\n", infoImagem->linhas);
-    printf(" :>> %d\n", infoImagem->colunas);
-
+    /* VERIFICA SE A ESCRITA É FEITA PELO STDOUT OU ARQUIVO */
     if (!linhaComando->impressao_stdin)
         input->arquivo_saida = abre_arquivo(linhaComando->saida, false);
     else
         input->arquivo_saida = stdout;
+
+    /* ESCREVE A IMAGEM */
     escreve_imagem(input);
 
-    free(linhaComando);
+    /* LIBERA MATRIZ */
     libera_matriz(input->infoImagem->imagem, infoImagem->linhas);
-    free(infoImagem);
+
+    /* LIBERA TODOS OS PONTEIROS */
+    free(linhaComando);
+    free(input->infoImagem);
     free(input);
     return 0;
 }

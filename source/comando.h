@@ -10,6 +10,8 @@
 #include <errno.h>
 #include <math.h>
 
+/* STRUCT RESPONSAVEL POR ARMAZENAR OS DADOS PASSADOS PELA LINHA DE COMANDO */
+
 typedef struct linha_comando
 {
     char *comando;
@@ -24,6 +26,8 @@ typedef struct linha_comando
     double valor_limiar;
     int valor_rotacao;
 } linha_comando;
+
+/* FUNCOES DA BIBLIOTECA */
 
 void ler_linha_comando(int argc, char const *argv[], linha_comando *linhaComando);
 FILE *abre_arquivo(char *nome, bool entrada);

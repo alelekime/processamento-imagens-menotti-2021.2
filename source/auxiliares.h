@@ -10,6 +10,16 @@
 #include <errno.h>
 #include <math.h>
 
+/* ULTILIZADA PARA ACHAR O MAXIMO E O MINIMO NO FILTRO DE ROTACAO*/
+
+#define min(a, b) (((a) < (b)) ? (a) : (b))
+#define max(a, b) (((a) > (b)) ? (a) : (b))
+
+/* FUNCOES DA BIBLIOTECA */
+
+void encontra_vizinhos(unsigned char **imagem, int *vetor_vizinhos, int i, int j);
+int calcula_vizinhos(int *vetor_vizinhos);
+int cmpfunc(const void *a, const void *b);
 void troca_valores(int *a, int *b);
 int verfica_comentario(char *aux);
 void libera_matriz(unsigned char **imagem, int linhas);
