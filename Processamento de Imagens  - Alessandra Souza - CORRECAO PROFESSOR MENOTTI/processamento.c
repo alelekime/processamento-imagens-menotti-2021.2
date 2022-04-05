@@ -27,7 +27,7 @@ void filtro_limiar(unsigned char **imagem, int linhas, int colunas, int max, dou
         for (j = 0; j < colunas; j++)
         {
             /* FAZ A VERIFICACO DO PIXEL ATUAL */
-            if (imagem[i][j] >= valor)
+            if (imagem[i][j] >= max * limiar) // Menotti - valor => max*limiar
                 imagem[i][j] = max;
             else
                 imagem[i][j] = 0;
@@ -38,19 +38,19 @@ void filtro_limiar(unsigned char **imagem, int linhas, int colunas, int max, dou
 /* REALIZA O FILTRO DA MEDIA*/
 void filtro_media(unsigned char **imagem, int linhas, int colunas)
 {
-    int i, j;
+    int i, j, nvizinhos; // nvizinhos
     /* ALOCA O VETOR PARA TODOS OS VIZINHOS DO PIXEL ATUAL */
     int *vetor_vizinhos = malloc(sizeof(int) * 9);
     /* ALOCA UMA MATRIZ COM OS NOVOS VALORES DE LINHA E COLUNA */
     unsigned char **imagem_copia = aloca_matriz(linhas, colunas);
-    /* CALULA PIXEL A PIXEL */
-    for (i = 1; i < linhas - 1; i++)
-        for (j = 1; j < colunas - 1; j++)
+    /* CALCULA PIXEL A PIXEL */
+    for (i = 0; i < linhas ; i++)
+        for (j = 0; j < colunas ; j++)
         {
             /* ENCONTRA OS VIZINHOS DO PIXEL ATUAL */
-            encontra_vizinhos(imagem, vetor_vizinhos, i, j);
+            encontra_vizinhos(imagem, vetor_vizinhos, i, j, linhas, colunas, &nvizinhos);
             /* SOMA TODOS OS VALORES DOS VIZINHOS DO PIXEL ATUAL E FAZ A MEDIA*/
-            imagem_copia[i][j] = calcula_vizinhos(vetor_vizinhos);
+            imagem_copia[i][j] = calcula_vizinhos(vetor_vizinhos, nvizinhos);
         }
     /* COPIA A NOVA IMAGEM PARA A ORIGINAL */
     copia_imagem(imagem_copia, imagem, linhas, colunas);
@@ -61,83 +61,107 @@ void filtro_media(unsigned char **imagem, int linhas, int colunas)
 }
 
 /* REALIZA O FILTRO DA MEDIANA*/
-void filtro_mediana(unsigned char **imagem, int linhas, int colunas, int mascara)
+unsigned char** filtro_mediana(unsigned char **imagem, int linhas, int colunas, int mascara)
 {
-    int mediana, i, j, k, l, index;
+    /* ALOCA UMA MATRIZ COM OS NOVOS VALORES DE LINHA E COLUNA */
+    unsigned char **imagem_copia = aloca_matriz(linhas, colunas); // Menotti
+
+    unsigned char mediana;
+    int i, j, k, l, index;
     /* CALCULA O TAMANHO DO VETOR DE ACORDO COM A MASCARA */
     int pos = mascara * mascara;
     /* ALOCA O VETOR PARA TODOS OS VIZINHOS DO PIXEL ATUAL */
-    int *vetor_vizinhos = malloc(sizeof(int) * pos);
+    unsigned char *vetor_vizinhos = malloc(sizeof(unsigned char) * pos); // Menotti int => unsigned char
     /* CALULA PIXEL A PIXEL */
     for (i = 0; i < linhas; i++)
         for (j = 0; j < colunas; j++)
         {
+            if (i < mascara/2 || i >= linhas-mascara/2 || j < mascara/2 || j >= colunas-mascara/2) {
+                imagem_copia[i][j] = imagem[i][j];
+                continue;
+            }
+
             /* INCIA A VARIAVEL RESPOSAVEL POR ALTERNAR O INDEX DO VETOR DE VIZINHOS */
             index = 0;
             /* A VARIAVEL K FICA RESPONSAVEL POR ARMAZENAR O INDEX DA LINHA ATUAL DA MASCARA */
-            for (k = 0; k < mascara && k + i < linhas; k++)
+            for (k = -mascara/2; k <= mascara/2 ; k++) // Menotti centrando máscara
                 /* A VARIAVEL L FICA RESPONSAVEL POR ARMAZENAR O INDEX DA COLUNA ATUAL DA MASCARA */
-                for (l = 0; l < mascara && l + j < colunas; l++)
+                for (l = -mascara/2; l <= mascara/2 ; l++)
                 {
                     /* AO VETOR DE VIZINHOS RECEBE AS VALORES DA POSICAO POR ONDE A MASCA PASSA*/
                     vetor_vizinhos[index] = imagem[k + i][l + j];
                     index++;
                 }
             /* REALIZA A ORDENACAO DO VETOR */
-            qsort(vetor_vizinhos, pos, sizeof(int), cmpfunc);
+            qsort(vetor_vizinhos, pos, sizeof(unsigned char), cmpfunc);
             /* ENCONTRA O VALOR NA METADE DA SEQUENCIA */
             mediana = vetor_vizinhos[(index / 2)];
             /* ALTERA O VALOR DO PIXEL CENTRAL */
-            imagem[i][j] = mediana;
+            imagem_copia[i][j] = mediana; // Menotti
         }
+
     /* LIBERA O VETOR DOS VIZINHOS  */
     free(vetor_vizinhos);
+
+    /* LIBERA IMAGEM ORIGINAL */
+    libera_matriz(imagem, linhas);
+
+    return imagem_copia;
 }
 
 /* CALCULA O NOVO VALOR DO PIXEL CENTRAL */
 int calcula_lbp(int *vetor_vizinhos, int pixel)
 
 {
-    int potencia = 0;
+   int potencia = 0;
     int soma = 0;
     int i;
-    for (i = 0; i < 8; i++, potencia++)
+    for (i = 0; i < 9; i++)
     {
         /*SE O VALOR DA POSICAO ATUAL DO VETOR FOR
         MAIOR OU IGUAL AO PIXEL CENTRAL,
         DEVE-SE SOMAR O VALOR DE 2
         NA POTENCIA DA MASCARA ATUAL*/
-        if (vetor_vizinhos[i] >= pixel)
+        if (i != 4) // Menotti - adaptação - evitando pixel central
         {
-            /* MASCARA :>> 2ˆN, ONDE N: {0,1,2,..,7} */
-            soma = pow(2, potencia);
+            if (vetor_vizinhos[i] >= pixel)
+                /* MASCARA :>> 2ˆN, ONDE N: {0,1,2,..,7} */
+                soma += pow(2, potencia); //   =     +=
+            potencia++;
         }
     }
     return soma;
 }
 
 /* REALIZA O FILTRO DE LBP*/
-void filtro_lbp(unsigned char **imagem, int linhas, int colunas)
+unsigned char** filtro_lbp(unsigned char **imagem, int linhas, int colunas)
 {
+    /* ALOCA UMA MATRIZ COM OS NOVOS VALORES DE LINHA E COLUNA */
+    unsigned char **imagem_copia = aloca_matriz(linhas, colunas); // Menotti
 
     /* ALOCA UMA VETOR PARA OS VALORES DO PIXEL CENTRAL */
     int *vetor_vizinhos = malloc(sizeof(int) * 9);
 
-    int i, j, pixel;
+    int i, j, pixel, nvizinhos; // Menotti
 
     /* CALULA PIXEL A PIXEL */
     for (i = 1; i < linhas - 1; i++)
         for (j = 1; j < colunas - 1; j++)
         {
             /* ENCONTRA OS VIZINHOS DO PIXEL ATUAL */
-            encontra_vizinhos(imagem, vetor_vizinhos, i, j);
+            encontra_vizinhos(imagem, vetor_vizinhos, i, j, linhas, colunas, &nvizinhos); // Menotti - adaptação, mas aqui nvizihos não é usada
             /* RESPEITANDO A REGRA DO LBP, CALCULA O NOVO VALOR PARA O PIXEL CENTRAL*/
             pixel = calcula_lbp(vetor_vizinhos, imagem[i][j]);
             /* ALTERA O VALOR DO PIXEL CENTRAL */
-            imagem[i][j] = pixel;
+            imagem_copia[i][j] = pixel;
         }
     /* LIBERA O VETOR DOS VIZINHOS  */
     free(vetor_vizinhos);
+
+    /* LIBERA IMAGEM ORIGINAL */
+    libera_matriz(imagem, linhas); // Menotti
+
+    return imagem_copia; // Menotti
 }
 
 /* REALIZA O FILTRO DE ROTACAO SIMPLES*/
